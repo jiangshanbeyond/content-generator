@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>内容生成工具</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #0f0f0f;
+    color: #e8e8e8;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  header p {
+    font-size: 13px;
+    color: #888;
+  }
+
+  .main-layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .panel {
+    background: #1a1a1a;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #2a2a2a;
+  }
+
+  .panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title::before {
+    content: "";
+    width: 4px;
+    height: 16px;
+    background: #ff6b35;
+    border-radius: 2px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+  }
+
+  select, textarea, input[type="text"] {
+    width: 100%;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #e8e8e8;
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  select:focus, textarea:focus, input[type="text"]:focus {
+    border-color: #ff6b35;
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 90px;
+    font-family: inherit;
+    line-height: 1.6;
+  }
+
+  select option { background: #1a1a1a; }
+
+  /* 参考图上传区 */
+  .ref-upload-area {
+    border: 2px dashed #333;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .ref-upload-area:hover {
+    border-color: #ff6b35;
+    background: rgba(255,107,53,0.05);
+  }
+
+  .ref-upload-area.has-image {
+    border-style: solid;
+    border-color: #4a4a4a;
+    padding: 8px;
+  }
+
+  .ref-upload-area input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ref-placeholder {
+    pointer-events: none;
+  }
+
+  .ref-placeholder-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  .ref-placeholder-text {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  .ref-placeholder-hint {
+    font-size: 11px;
+    color: #444;
+    margin-top: 4px;
+  }
+
+  .ref-preview {
+    display: none;
+    position: relative;
+  }
+
+  .ref-preview img {
+    width: 100%;
+    max-height: 160px;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+
+  .ref-preview.has-image {
+    display: block;
+  }
+
+  .ref-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 24px;
+  }
+
+  .ref-style-info {
+    display: none;
+    margin-top: 10px;
+    background: #111;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 12px;
+    color: #888;
+  }
+
+  .ref-style-info.show {
+    display: block;
+  }
+
+  .ref-color-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 6px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .ref-style-tag {
+    display: inline-block;
+    background: #222;
+    color: #ff6b35;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin: 2px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+  }
+
+  .btn-primary {
+    background: #ff6b35;
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: #ff8255; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+  .btn-secondary {
+    background: #222;
+    color: #ccc;
+    border: 1px solid #333;
+  }
+
+  .btn-secondary:hover { background: #2a2a2a; }
+  .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    color: #666;
+    border: 1px solid #333;
+    font-size: 13px;
+    padding: 8px 16px;
+    width: auto;
+    margin-bottom: 0;
+  }
+
+  .btn-ghost:hover { color: #ff6b35; border-color: #ff6b35; }
+
+  .tab-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    padding: 10px 20px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    color: #888;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover { color: #fff; border-color: #444; }
+  .tab-btn.active { background: #ff6b35; color: #fff; border-color: #ff6b35; }
+
+  .tab-panel { display: none !important; }
+  .tab-panel.active { display: block !important; }
+  .tab-panel.active #panel-generate { display: grid !important; }
+  .tab-panel.active .main-layout { display: grid !important; }
+
+  .result-card-analyze { background: #1a1a1a; border-radius: 16px; padding: 24px; border: 1px solid #2a2a2a; margin-top: 16px; }
+  .result-card-analyze h3 { color: #ff6b35; margin-bottom: 12px; font-size: 16px; }
+  .result-card-analyze p, .result-card-analyze li { color: #ccc; font-size: 14px; line-height: 1.8; }
+  .result-card-analyze ul { padding-left: 20px; }
+  .result-card-analyze .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+  .title-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 16px; margin-top: 12px; cursor: pointer; transition: all 0.2s; }
+  .title-card:hover { border-color: #ff6b35; }
+  .title-card .title-text { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+  .title-card .title-meta { font-size: 12px; color: #666; }
+  .title-card .title-reason { font-size: 12px; color: #888; margin-top: 6px; display: none; }
+  .title-card.expanded .title-reason { display: block; }
+
+  .template-box { background: #111; border-radius: 12px; padding: 20px; margin-top: 16px; }
+  .template-box h4 { color: #ff6b35; margin-bottom: 12px; }
+  .template-box .template-content { color: #ccc; font-size: 13px; line-height: 1.8; white-space: pre-wrap; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #2a2a2a;
+    margin: 16px 0;
+  }
+
+  /* 右侧输出 */
+  .output-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .result-card {
+    background: #1a1a1a;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #2a2a2a;
+  }
+
+  .result-card:empty { display: none; }
+
+  .result-label {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .result-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.4;
+    margin-bottom: 16px;
+  }
+
+  .result-body {
+    font-size: 14px;
+    color: #ccc;
+    line-height: 1.9;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .result-hook {
+    background: linear-gradient(135deg, #1a1a1a, #222);
+    border-left: 3px solid #ff6b35;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #ddd;
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+
+  .result-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .tag {
+    background: #222;
+    color: #ff6b35;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #333;
+  }
+
+  .tips-box {
+    background: #1a2a1a;
+    border: 1px solid #2a4a2a;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 13px;
+    color: #7ec87e;
+    margin-top: 16px;
+  }
+
+  .images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .img-card {
+    border-radius: 10px;
+    overflow: hidden;
+    background: #111;
+    border: 1px solid #2a2a2a;
+  }
+
+  .img-card img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+  }
+
+  .img-card .img-label {
+    font-size: 11px;
+    color: #666;
+    padding: 6px 8px;
+    text-align: center;
+    background: #1a1a1a;
+  }
+
+  .img-card.loading .img-label {
+    color: #ff6b35;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .prompt-box {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+  }
+
+  .prompt-label {
+    font-size: 10px;
+    color: #555;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .prompt-text {
+    font-size: 12px;
+    color: #888;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  .copy-btn {
+    background: #222;
+    color: #e8e8e8;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 10px;
+  }
+
+  .copy-btn:hover { background: #333; border-color: #ff6b35; color: #ff6b35; }
+  .copy-btn.copied { background: #1a3a1a; border-color: #4a8a4a; color: #7ec87e; }
+
+  .action-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .action-row .btn-ghost {
+    flex: 1;
+    text-align: center;
+  }
+
+  /* 状态 */
+  .status-bar {
+    font-size: 12px;
+    color: #666;
+    margin-top: 12px;
+    text-align: center;
+    min-height: 18px;
+  }
+
+  .status-bar.error { color: #ff6b35; }
+  .status-bar.loading { color: #ff6b35; }
+
+  .loading-dots::after { content: ""; animation: dots 1.5s infinite; }
+
+  @keyframes dots {
+    0% { content: ""; }
+    33% { content: "."; }
+    66% { content: ".."; }
+    100% { content: "..."; }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #333;
+    border-top-color: #ff6b35;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  .error-box {
+    background: #2a1a1a;
+    border: 1px solid #4a2a2a;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+    color: #ff6b6b;
+    margin-top: 10px;
+    white-space: pre-wrap;
+  }
+
+  .call-to-action {
+    background: linear-gradient(135deg, #1a1a2a, #2a1a3a);
+    border: 1px solid #3a2a4a;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #c87eff;
+    margin-top: 16px;
+    text-align: center;
+  }
+
+  @media (max-width: 768px) {
+    .main-layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>内容生成工具</h1>
+    <p>输入需求 → 生成吸引人的文案+图片 → 复制/下载发布</p>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="generate" onclick="switchTab('generate')">🔥 发布内容生成</button>
+    <button class="tab-btn" data-tab="analyze" onclick="switchTab('analyze')">📊 品类爆款分析</button>
+    <button class="tab-btn" data-tab="titles" onclick="switchTab('titles')">✍️ 爆款标题</button>
+    <button class="tab-btn" data-tab="template" onclick="switchTab('template')">📋 买手模板</button>
+  </div>
+
+  <!-- Tab panels wrapper -->
+  <div id="tabContent">
+
+    <!-- Tab 1: 发布内容生成 -->
+    <div id="panel-generate" class="tab-panel active">
+
+    <!-- 左侧输入 -->
+    <div class="panel">
+      <div class="panel-title">需求输入</div>
+
+      <div class="form-group">
+        <label>发布平台</label>
+        <select id="platform">
+          <option value="小红书">小红书</option>
+          <option value="买手种草">小红书买手种草（高转化）</option>
+          <option value="微信公众号">微信公众号</option>
+          <option value="微博">微博</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>需求描述</label>
+        <textarea id="request" placeholder="例如：
+• 卖晚霜的小红书种草笔记
+• 我开的服装店清仓促销
+• 分享我每天早起的习惯
+• 打工人周一综合症共鸣
+• 端午节粽子推荐
+• 咖啡店探店"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>商品/品牌补充信息（可选）</label>
+        <input type="text" id="context" placeholder="商品名/品牌名/卖点/价格/目标人群等">
+      </div>
+
+      <!-- 参考图上传 -->
+      <div class="form-group">
+        <label>参考图（可选）</label>
+        <div class="ref-upload-area" id="refUploadArea">
+          <input type="file" id="refFileInput" accept="image/*">
+
+          <div class="ref-placeholder" id="refPlaceholder">
+            <div class="ref-placeholder-icon">🖼️</div>
+            <div class="ref-placeholder-text">
+              上传商品图/参考图<br>
+              <span class="ref-placeholder-hint">自动提取风格特征，生成匹配的图片</span>
+            </div>
+          </div>
+
+          <div class="ref-preview" id="refPreview">
+            <img id="refPreviewImg" src="" alt="参考图">
+            <button class="ref-remove" id="refRemoveBtn" onclick="removeRef(event)">×</button>
+          </div>
+        </div>
+
+        <div class="ref-style-info" id="refStyleInfo">
+          <div id="refColorRow">
+            <span class="ref-color-dot" id="refColorDot"></span>
+            <span id="refColorText"></span>
+          </div>
+          <div id="refStyleTags" style="margin-top:6px"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="generateBtn" onclick="generateText()">
+        ✨ 生成文案
+      </button>
+
+      <hr class="divider">
+
+      <button class="btn btn-secondary" id="generateImgBtn" onclick="generateImages()" disabled>
+        🖼️ 生成图片
+      </button>
+
+      <div class="status-bar" id="statusBar"></div>
+    </div>
+
+    <!-- 右侧输出 -->
+    <div class="output-section">
+
+      <div class="result-card" id="textResult">
+        <div class="result-label">标题</div>
+        <div class="result-title" id="resultTitle">-</div>
+
+        <div id="resultHookSection" style="display:none">
+          <div class="result-label">钩子</div>
+          <div class="result-hook" id="resultHook"></div>
+        </div>
+
+        <div class="result-label">正文</div>
+        <div class="result-body" id="resultBody">-</div>
+
+        <div class="result-tags" id="resultTags"></div>
+
+        <div class="call-to-action" id="resultCta" style="display:none"></div>
+
+        <div class="tips-box" id="resultTips" style="display:none"></div>
+
+        <div class="prompt-box" id="coverPromptBox" style="display:none">
+          <div class="prompt-label">封面图 Prompt</div>
+          <div class="prompt-text" id="coverPrompt"></div>
+        </div>
+
+        <div class="prompt-box" id="imgPromptBox" style="display:none">
+          <div class="prompt-label">配图 Prompts</div>
+          <div class="prompt-text" id="imgPrompts"></div>
+        </div>
+
+        <div class="action-row" id="actionRow" style="display:none">
+          <button class="copy-btn" id="copyBtn" onclick="copyAll()">复制全部内容</button>
+          <button class="btn-ghost" id="copyBodyBtn" onclick="copyBody()">复制正文</button>
+          <button class="btn-ghost" id="copyTitleBtn" onclick="copyTitle()">复制标题</button>
+        </div>
+
+        <div id="errorBox" class="error-box" style="display:none"></div>
+      </div>
+
+      <div class="result-card" id="imageResult">
+        <div class="result-label">生成图片</div>
+        <div class="images-grid" id="imagesGrid"></div>
+      </div>
+
+    </div>
+    </div><!-- /panel-generate -->
+
+    <!-- Tab 2: 品类爆款分析 -->
+    <div id="panel-analyze" class="tab-panel">
+    <div class="panel" style="grid-column:1/-1">
+      <div class="panel-title">📊 品类爆款分析</div>
+      <div style="color:#888;font-size:12px;margin-bottom:16px">输入品类名，自动研究小红书爆款规律</div>
+      <div class="form-group">
+        <label>选择品类</label>
+        <select id="analyzeCategory">
+          <option value="">请选择</option>
+          <option value="美妆护肤">美妆护肤</option>
+          <option value="零食饮料">零食饮料</option>
+          <option value="家居好物">家居好物</option>
+          <option value="数码配件">数码配件</option>
+          <option value="服装穿搭">服装穿搭</option>
+          <option value="宠物用品">宠物用品</option>
+          <option value="母婴用品">母婴用品</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="analyzeCategory()">🔍 开始分析</button>
+      <div id="analyzeResult" style="margin-top:20px;display:none"></div>
+    </div>
+    </div><!-- /panel-analyze -->
+
+    <!-- Tab 3: 爆款标题 -->
+    <div id="panel-titles" class="tab-panel">
+    <div class="panel" style="grid-column:1/-1">
+      <div class="panel-title">✍️ 爆款标题生成</div>
+      <div style="color:#888;font-size:12px;margin-bottom:16px">针对品类生成10个高点击率标题</div>
+      <div class="form-group">
+        <label>选择品类</label>
+        <select id="titlesCategory">
+          <option value="">请选择</option>
+          <option value="美妆护肤">美妆护肤</option>
+          <option value="零食饮料">零食饮料</option>
+          <option value="家居好物">家居好物</option>
+          <option value="数码配件">数码配件</option>
+          <option value="服装穿搭">服装穿搭</option>
+          <option value="宠物用品">宠物用品</option>
+          <option value="母婴用品">母婴用品</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>产品/品牌（可选）</label>
+        <input type="text" id="titlesProduct" placeholder="例如：某品牌晚霜">
+      </div>
+      <button class="btn btn-primary" onclick="generateTitles()">✨ 生成10个标题</button>
+      <div id="titlesResult" style="margin-top:20px;display:none"></div>
+    </div>
+    </div><!-- /panel-titles -->
+
+    <!-- Tab 4: 买手模板 -->
+    <div id="panel-template" class="tab-panel">
+    <div class="panel" style="grid-column:1/-1">
+      <div class="panel-title">📋 买手种草模板</div>
+      <div style="color:#888;font-size:12px;margin-bottom:16px">生成可直接套用的买手种草模板</div>
+      <div class="form-group">
+        <label>选择品类</label>
+        <select id="templateCategory">
+          <option value="">请选择</option>
+          <option value="美妆护肤">美妆护肤</option>
+          <option value="零食饮料">零食饮料</option>
+          <option value="家居好物">家居好物</option>
+          <option value="数码配件">数码配件</option>
+          <option value="服装穿搭">服装穿搭</option>
+          <option value="宠物用品">宠物用品</option>
+          <option value="母婴用品">母婴用品</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>产品/品牌（可选）</label>
+        <input type="text" id="templateProduct" placeholder="具体产品名">
+      </div>
+      <button class="btn btn-primary" onclick="generateTemplate()">📋 生成模板</button>
+      <div id="templateResult" style="margin-top:20px;display:none"></div>
+    </div>
+    </div><!-- /panel-template -->
+
+  </div>
+</div>
+
+<script>
+  let currentData = null;
+  let sessionId = Math.random().toString(36).substring(2, 10);
+  let refStyle = null;
+  let refId = null;
+  let uploading = false;
+  let currentTab = 'generate';
+
+  function setStatus(msg, type) {
+    const el = document.getElementById("statusBar");
+    el.textContent = msg;
+    el.className = "status-bar " + (type || "");
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  function switchTab(tab) {
+    // Step 1: Hide ALL panels using inline style
+    var panels = document.querySelectorAll('.tab-panel');
+    for (var i = 0; i < panels.length; i++) {
+      panels[i].style.display = 'none';
+      panels[i].classList.remove('active');
+    }
+    // Step 2: Deactivate ALL tab buttons
+    var buttons = document.querySelectorAll('.tab-btn');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].classList.remove('active');
+    }
+    // Step 3: Find the clicked button and activate it
+    var clickedBtn = null;
+    for (var i = 0; i < buttons.length; i++) {
+      var d = buttons[i].getAttribute('data-tab');
+      var o = buttons[i].getAttribute('onclick') || '';
+      if (d === tab || o.indexOf("switchTab('" + tab + "')") !== -1) {
+        clickedBtn = buttons[i];
+        break;
+      }
+    }
+    if (clickedBtn) clickedBtn.classList.add('active');
+    // Step 4: Find the target panel and show it
+    var targetPanel = document.getElementById('panel-' + tab);
+    if (targetPanel) {
+      targetPanel.style.display = 'block';
+      targetPanel.classList.add('active');
+    }
+  }
+
+  // ── 参考图上传 ──
+  $("refFileInput").addEventListener("change", async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    setStatus("分析参考图风格...", "loading");
+    uploading = true;
+
+    try {
+      const resp = await fetch("/upload-reference", { method: "POST", body: formData });
+      const data = await resp.json();
+
+      if (data.error) {
+        setStatus(data.error, "error");
+        return;
+      }
+
+      refId = data.ref_id;
+      refStyle = data.style;
+
+      // 显示预览
+      $("refPlaceholder").style.display = "none";
+      $("refPreview").classList.add("has-image");
+      $("refPreviewImg").src = data.ref_url;
+      $("refUploadArea").classList.add("has-image");
+
+      // 显示风格信息
+      $("refStyleInfo").classList.add("show");
+      $("refColorDot").style.background = data.style.color_rgb;
+      $("refColorText").textContent = `${data.style.color_rgb} · ${data.style.brightness}亮度`;
+
+      const tagsEl = $("refStyleTags");
+      tagsEl.innerHTML = "";
+      [data.style.temperature, data.style.lightness, data.style.vibrancy, data.style.composition, data.style.mood].forEach(tag => {
+        if (tag && tag !== "未知") {
+          const span = document.createElement("span");
+          span.className = "ref-style-tag";
+          span.textContent = tag;
+          tagsEl.appendChild(span);
+        }
+      });
+
+      setStatus("参考图已分析完成 ✨", "");
+    } catch (e) {
+      setStatus("参考图上传失败: " + e.message, "error");
+    } finally {
+      uploading = false;
+    }
+  });
+
+  function removeRef(e) {
+    e.stopPropagation();
+    $("refFileInput").value = "";
+    $("refPlaceholder").style.display = "block";
+    $("refPreview").classList.remove("has-image");
+    $("refUploadArea").classList.remove("has-image");
+    $("refStyleInfo").classList.remove("show");
+    refStyle = null;
+    refId = null;
+    setStatus("");
+  }
+
+  // ── 生成文案 ──
+  async function generateText() {
+    const platform = $("platform").value;
+    const request = $("request").value.trim();
+    const context = $("context").value.trim();
+
+    if (!request) {
+      setStatus("请输入需求", "error");
+      return;
+    }
+
+    const btn = $("generateBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>构思中...';
+    setStatus("正在生成吸引人的文案...", "loading");
+    $("errorBox").style.display = "none";
+
+    try {
+      const payload = {
+        platform,
+        request,
+        context,
+        style_hint: refStyle ? refStyle.style_hint : "",
+        product_color: refStyle ? refStyle.color_rgb : ""
+      };
+
+      const resp = await fetch("/generate", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+      });
+
+      const data = await resp.json();
+
+      if (data.error) {
+        if (data.error.includes("原始内容")) {
+          $("errorBox").textContent = data.error;
+          $("errorBox").style.display = "block";
+          setStatus("返回格式有误，请重试", "error");
+        } else {
+          setStatus(data.error, "error");
+        }
+        return;
+      }
+
+      currentData = data;
+      sessionId = Math.random().toString(36).substring(2, 10);
+
+      // 标题
+      $("resultTitle").textContent = data.title || "-";
+
+      // 钩子
+      if (data.hook) {
+        $("resultHookSection").style.display = "block";
+        $("resultHook").textContent = data.hook;
+      } else {
+        $("resultHookSection").style.display = "none";
+      }
+
+      // 正文
+      $("resultBody").textContent = data.body || "-";
+
+      // Tags
+      const tagsEl = $("resultTags");
+      tagsEl.innerHTML = "";
+      if (data.tags) {
+        data.tags.forEach(tag => {
+          const span = document.createElement("span");
+          span.className = "tag";
+          span.textContent = "#" + tag;
+          tagsEl.appendChild(span);
+        });
+      }
+
+      // CTA
+      if (data.call_to_action) {
+        $("resultCta").textContent = data.call_to_action;
+        $("resultCta").style.display = "block";
+      } else {
+        $("resultCta").style.display = "none";
+      }
+
+      // Tips
+      const tipsEl = $("resultTips");
+      if (data.tips) {
+        tipsEl.textContent = "💡 " + data.tips;
+        tipsEl.style.display = "block";
+      } else {
+        tipsEl.style.display = "none";
+      }
+
+      // Prompts
+      if (data.cover_style) {
+        $("coverPrompt").textContent = data.cover_style;
+        $("coverPromptBox").style.display = "block";
+      } else {
+        $("coverPromptBox").style.display = "none";
+      }
+
+      if (data.image_styles && data.image_styles.length) {
+        $("imgPrompts").textContent = data.image_styles.join("\n");
+        $("imgPromptBox").style.display = "block";
+      } else {
+        $("imgPromptBox").style.display = "none";
+      }
+
+      $("actionRow").style.display = "flex";
+      $("generateImgBtn").disabled = false;
+
+      setStatus("文案生成完成！可以复制，也可以生成配套图片", "");
+
+    } catch (e) {
+      setStatus("生成失败: " + e.message, "error");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "✨ 生成文案";
+    }
+  }
+
+  // ── 生成图片 ──
+  async function generateImages() {
+    if (!currentData) return;
+
+    const btn = $("generateImgBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>生成图片（需30-60秒/张）';
+    setStatus("正在生成图片...", "loading");
+
+    const grid = $("imagesGrid");
+    grid.innerHTML = "";
+    const imgCount = (currentData.image_styles || []).length + 1;
+    const labels = ["封面图", ...(currentData.image_styles || []).map((_, i) => `配图${i+1}`)];
+
+    for (let i = 0; i < imgCount; i++) {
+      const card = document.createElement("div");
+      card.className = "img-card loading";
+      card.innerHTML = `<div class="img-label">${labels[i]} 生成中...</div>`;
+      grid.appendChild(card);
+    }
+
+    try {
+      const resp = await fetch("/generate-images", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          cover_prompt: currentData.cover_style || currentData.title,
+          image_styles: currentData.image_styles || [],
+          session_id: sessionId,
+          style_hint: refStyle ? refStyle.style_hint : "",
+          ref_id: refId
+        })
+      });
+
+      const data = await resp.json();
+      grid.innerHTML = "";
+
+      if (data.images && data.images.length) {
+        data.images.forEach(img => {
+          const card = document.createElement("div");
+          card.className = "img-card";
+          if (img.error) {
+            card.innerHTML = `<div class="img-label" style="color:#ff6b35">生成失败</div>`;
+          } else {
+            const label = img.type === "cover" ? "封面图" : `配图${img.index}`;
+            card.innerHTML = `
+              <img src="${img.path}?t=${Date.now()}" alt="${label}">
+              <div class="img-label">${label}</div>
+            `;
+          }
+          grid.appendChild(card);
+        });
+        setStatus("图片生成完成！右键保存", "");
+      } else {
+        grid.innerHTML = '<div class="img-label" style="color:#ff6b35">无图片数据</div>';
+      }
+
+    } catch (e) {
+      setStatus("图片生成失败: " + e.message, "error");
+      grid.innerHTML = "";
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "🖼️ 生成图片";
+    }
+  }
+
+  // ── 品类爆款分析 ──
+  async function analyzeCategory() {
+    const category = $("analyzeCategory").value;
+    if (!category) { alert("请选择品类"); return; }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>分析中...';
+
+    try {
+      const resp = await fetch("/analyze-category", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ category })
+      });
+      const data = await resp.json();
+
+      if (data.error) { alert(data.error); return; }
+
+      const el = $("analyzeResult");
+      el.style.display = "block";
+      el.innerHTML = `
+        <div class="result-card-analyze">
+          <h3>🔥 爆款内容规律</h3>
+          <ul>${(data.hot_patterns || []).map(p => `<li>${p}</li>`).join("")}</ul>
+        </div>
+        <div class="result-card-analyze">
+          <h3>✍️ 标题规律</h3>
+          <ul>${(data.title_rules || []).map(r => `<li>${r}</li>`).join("")}</ul>
+        </div>
+        <div class="result-card-analyze">
+          <h3>🖼️ 配图风格</h3>
+          <p>${data.image_style || "-"}</p>
+        </div>
+        <div class="result-card-analyze">
+          <h3>🏷️ Tag规律</h3>
+          <p>${data.tags_pattern || "-"}</p>
+        </div>
+        <div class="result-card-analyze">
+          <h3>📈 容易爆的内容类型</h3>
+          <ul>${(data.best_content_types || []).map(t => `<li>${t}</li>`).join("")}</ul>
+        </div>
+        <div class="result-card-analyze">
+          <h3>⚠️ 常见误区</h3>
+          <ul>${(data.avoid_mistakes || []).map(m => `<li>${m}</li>`).join("")}</ul>
+        </div>
+        <div class="result-card-analyze">
+          <h3>💡 运营建议</h3>
+          <p>${data.posting_tips || "-"}</p>
+        </div>
+      `;
+    } catch (e) {
+      alert("分析失败: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "🔍 开始分析";
+    }
+  }
+
+  // ── 爆款标题生成 ──
+  async function generateTitles() {
+    const category = $("titlesCategory").value;
+    const product = $("titlesProduct").value.trim();
+    if (!category) { alert("请选择品类"); return; }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>生成中...';
+
+    try {
+      const resp = await fetch("/generate-titles", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ category, product })
+      });
+      const data = await resp.json();
+
+      if (data.error) { alert(data.error); return; }
+
+      const el = $("titlesResult");
+      el.style.display = "block";
+      el.innerHTML = (data.titles || []).map(t => `
+        <div class="title-card" onclick="this.classList.toggle('expanded')">
+          <div class="title-text">${t.text}</div>
+          <div class="title-meta">${t.style} · 点击查看原因</div>
+          <div class="title-reason">${t.reason}</div>
+        </div>
+      `).join("");
+    } catch (e) {
+      alert("生成失败: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "✨ 生成10个标题";
+    }
+  }
+
+  // ── 买手模板 ──
+  async function generateTemplate() {
+    const category = $("templateCategory").value;
+    const product = $("templateProduct").value.trim();
+    if (!category) { alert("请选择品类"); return; }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>生成中...';
+
+    try {
+      const resp = await fetch("/generate-template", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ category, product })
+      });
+      const data = await resp.json();
+
+      if (data.error) { alert(data.error); return; }
+
+      const el = $("templateResult");
+      el.style.display = "block";
+      el.innerHTML = `
+        <div class="template-box">
+          <h4>📌 ${data.structure_name || data.structure_type} 推荐结构</h4>
+          <div class="template-content">${data.title_template || ""}</div>
+        </div>
+        <div class="template-box">
+          <h4>🔥 开头钩子模板</h4>
+          <div class="template-content">${data.hook_template || ""}</div>
+        </div>
+        <div class="template-box">
+          <h4>📝 正文模板</h4>
+          <div class="template-content">${data.body_template || ""}</div>
+        </div>
+        <div class="template-box">
+          <h4>🏷️ 推荐Tags</h4>
+          <div class="tag-list">${(data.tags_suggested || []).map(t => `<span class="tag">#${t}</span>`).join("")}</div>
+        </div>
+        <div class="template-box">
+          <h4>🖼️ 封面图Prompt</h4>
+          <div class="template-content">${data.cover_prompt || ""}</div>
+        </div>
+        <div class="template-box">
+          <h4>💬 结尾CTA</h4>
+          <div class="template-content">${data.cta_template || ""}</div>
+        </div>
+        <div class="template-box">
+          <h4>🛒 挂链引导文案</h4>
+          <div class="template-content">${data.buy_guide_template || ""}</div>
+        </div>
+        ${data.tips ? `<div class="template-box"><h4>💡 使用注意</h4><div class="template-content">${data.tips}</div></div>` : ""}
+      `;
+    } catch (e) {
+      alert("生成失败: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "📋 生成模板";
+    }
+  }
+
+  // ── 复制功能 ──
+  function copyAll() {
+    if (!currentData) return;
+    const text = `${currentData.title}\n\n${currentData.hook ? currentData.hook + "\n\n" : ""}${currentData.body}\n\n${currentData.tags ? currentData.tags.map(t => "#" + t).join(" ") : ""}${currentData.call_to_action ? "\n\n" + currentData.call_to_action : ""}`;
+    navigator.clipboard.writeText(text).then(() => showCopyFeedback("copyBtn", "已复制！"));
+  }
+
+  function copyBody() {
+    if (!currentData) return;
+    navigator.clipboard.writeText(currentData.body).then(() => showCopyFeedback("copyBodyBtn", "正文已复制！"));
+  }
+
+  function copyTitle() {
+    if (!currentData) return;
+    navigator.clipboard.writeText(currentData.title).then(() => showCopyFeedback("copyTitleBtn", "标题已复制！"));
+  }
+
+  function showCopyFeedback(btnId, text) {
+    const btn = $(btnId);
+    const orig = btn.textContent;
+    btn.textContent = text;
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.classList.remove("copied");
+    }, 2000);
+  }
+</script>
+
+</body>
+</html>
